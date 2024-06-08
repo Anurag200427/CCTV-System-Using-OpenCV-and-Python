@@ -1,0 +1,58 @@
+import cv2
+import imutils
+
+def main():
+    cap = cv2.VideoCapture(0)
+
+    first_frame = None
+    
+    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+    out = cv2.VideoWriter('Recording.mp4v', fourcc, 20.0, (640, 480))
+     
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+       
+        frame = imutils.resize(frame, width=500)
+
+     
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        gray = cv2.GaussianBlur(gray, (21, 21), 0)
+
+        if first_frame is None:
+            first_frame = gray
+            continue
+
+        frame_delta = cv2.absdiff(first_frame, gray)
+        thresh = cv2.threshold(frame_delta, 25, 255, cv2.THRESH_BINARY)[1]
+
+        thresh = cv2.dilate(thresh, None, iterations=2)
+        contours = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours = imutils.grab_contours(contours)
+
+       
+        for contour in contours:
+            
+            if cv2.contourArea(contour) < 500:
+                continue
+
+            
+            (x, y, w, h) = cv2.boundingRect(contour)
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+       
+        cv2.imshow("Security Feed", frame)
+        cv2.imshow("Thresh", thresh)
+        cv2.imshow("Frame Delta", frame_delta)
+
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord("q"):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    main()
